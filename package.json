@@ -1,0 +1,34 @@
+{
+  "name": "myapp",
+  "version": "1.0.0",
+  "description": "Advanced web applications project",
+  "main": "app.js",
+  "scripts": {
+    "start": "tsc && node ./dist/app.js",
+    "dev": "nodemon ./src/app.ts",
+    "test": " tsc && jest --detectOpenHandles --forceExit --coverage",
+    "testauth": " tsc && jest --detectOpenHandles --forceExit auth.test.ts",
+    "lint": "eslint . --ext .ts"
+  },
+  "author": "eden aharon",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "typescript": "^5.7.2"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.14",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/mongoose": "^5.11.96",
+    "@types/supertest": "^6.0.2",
+    "dotenv": "^16.4.7",
+    "nodemon": "^3.1.7",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5"
+  }
+}
