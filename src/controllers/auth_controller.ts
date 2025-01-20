@@ -1,106 +1,83 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import userModel from '../models/user_model';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 
+const register = async (req: Request, res: Response) => {
+    const { username, email, password } = req.body;
 
-const register = async (req: Request, res: Response): Promise<void> => {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        res.status(400).send("Email and password are required");
+    if (!username || !email || !password) {
+        res.status(400).json({ message: "Username, email, and password are required" });
         return;
     }
 
     try {
         const existingUser = await userModel.findOne({ email });
         if (existingUser) {
-            res.status(409).send("User already exists");
+            res.status(409).json({ message: "Email already exists" });
             return;
         }
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
         const user = await userModel.create({
+            username,
             email,
             password: hashedPassword,
         });
-        res.status(200).send({
+        res.status(200).json({
             message: "User registered successfully",
             user: {
+                username: user.username,
                 email: user.email,
                 _id: user._id,
             },
         });
     } catch (err) {
-        console.error(err);
-        res.status(500).send("Error registering user"); 
+        res.status(500).json({ message: "Error registering user" });
     }
 };
 
-const login = async (req: Request, res: Response): Promise<void> => {
-    const email = req.body.email;
-    const password = req.body.password;
+const login = async (req: Request, res: Response) => {
+    const { email, password } = req.body;
 
-    if(!email || !password){
-         res.status(400).send("'wrong username or password'");
+    if (!email || !password) {
+        res.status(400).json({ message: "Email and password are required" });
+        return;
     }
-    try{
-        const user = await userModel.findOne({email: email});
-        if(!user){
-            res.status(404).send("wrong username or password");
+
+    try {
+        const user = await userModel.findOne({ email });
+        if (!user) {
+            res.status(400).json({ message: "Invalid credentials" });
             return;
-             
         }
+
         const validPassword = await bcrypt.compare(password, user.password);
-        if(!validPassword){
-             res.status(400).send("wrong username or password");
+        if (!validPassword) {
+            res.status(400).json({ message: "Invalid credentials" });
             return;
         }
-        if(!process.env.TOKEN_SECRET){
-             res.status(400).send("missing auth configuration");
-             return;
-            
+
+        if (!process.env.TOKEN_SECRET) {
+            res.status(500).json({ message: "Server Error" });
+            return;
         }
-        const token = jwt.sign({
-            _id: user._id},
-            process.env.TOKEN_SECRET,
-            {expiresIn: process.env.TOKEN_EXPIRATION}
-        );
-        res.status(200).send({
+
+        const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET, { expiresIn: process.env.TOKEN_EXPIRATION });
+        res.status(200).json({
+            username: user.username,
             email: user.email,
             _id: user._id,
-            token: token
+            token: token,
         });
-    }catch(err){
-     res.status(400);
-       
+    } catch (err) {
+        res.status(500).json({ message: "Error logging in" });
     }
-}
-
-type Payload = {
-    _id: string;
-}
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    const authorization = req.header('authorization');
-    const token = authorization && authorization.split(' ')[1];
-
-    if (!token) {
-        res.status(401).send('Access Denied');
-        return;
-    }
-    if (!process.env.TOKEN_SECRET) {
-        res.status(500).send('Server Error');
-        return;
-    }
-
-    jwt.verify(token, process.env.TOKEN_SECRET, (err, payload) => {
-        if (err) {
-            res.status(401).send('Access Denied');
-            return;
-        }
-        req.params.userId = (payload as Payload)._id;
-        next();
-    });
 };
-export default { register, login };
+
+const logout = (req: Request, res: Response) => {
+    res.status(200).json({ message: "Logged out successfully" });
+};
+
+export default { register, login, logout };
